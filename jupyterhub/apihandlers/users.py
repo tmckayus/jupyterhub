@@ -421,6 +421,7 @@ class UserServerAPIHandler(APIHandler):
         user = self.find_user(name)
         options = self.get_json_body()
         remove = (options or {}).get('remove', False)
+        force = (options or {}).get('force', False)
 
         def _remove_spawner(f=None):
             if f and f.exception():
@@ -449,13 +450,20 @@ class UserServerAPIHandler(APIHandler):
                 spawner._stop_future.add_done_callback(_remove_spawner)
             return
 
-        if spawner.pending:
-            raise web.HTTPError(
-                400,
-                "%s is pending %s, please wait" % (spawner._log_name, spawner.pending),
-            )
-
+        
         stop_future = None
+        if spawner.pending:
+            if force:
+                # include notify, so that a server that died is noticed immediately
+                status = await spawner.poll_and_notify()
+                if status is None:
+                    stop_future = await self.stop_single_user(user, server_name, force=force)
+            else:
+                raise web.HTTPError(
+                    400,
+                    "%s is pending %s, please wait" % (spawner._log_name, spawner.pending),
+                )
+
         if spawner.ready:
             # include notify, so that a server that died is noticed immediately
             status = await spawner.poll_and_notify()

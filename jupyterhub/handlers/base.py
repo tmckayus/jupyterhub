@@ -1070,11 +1070,11 @@ class BaseHandler(RequestHandler):
 
         await user.stop(server_name)
 
-    async def stop_single_user(self, user, server_name=''):
+    async def stop_single_user(self, user, server_name='', force=False):
         if server_name not in user.spawners:
             raise KeyError("User %s has no such spawner %r", user.name, server_name)
         spawner = user.spawners[server_name]
-        if spawner.pending:
+        if spawner.pending and not force:
             raise RuntimeError("%s pending %s" % (spawner._log_name, spawner.pending))
         # set user._stop_pending before doing anything async
         # to avoid races
