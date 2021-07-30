@@ -172,6 +172,7 @@ class NPM(BaseCommand):
     bower_dir = pjoin(static, 'components')
 
     def should_run(self):
+        return False
         if not shutil.which('npm'):
             print("npm unavailable", file=sys.stderr)
             return False
